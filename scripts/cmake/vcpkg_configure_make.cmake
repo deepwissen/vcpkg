@@ -535,8 +535,14 @@ function(vcpkg_configure_make)
         else()
             z_vcpkg_append_to_configure_environment(configure_env DLLTOOL "link.exe -verbose -dll")
         endif()
-        z_vcpkg_append_to_configure_environment(configure_env CCAS ":")   # If required set the ENV variable CCAS in the portfile correctly
-        z_vcpkg_append_to_configure_environment(configure_env AS ":")   # If required set the ENV variable AS in the portfile correctly
+        # For MinGW, use the toolchain's assembler. For MSVC, disable (not needed).
+        if(VCPKG_TARGET_IS_MINGW AND z_vcm_compiler_dir)
+            z_vcpkg_append_to_configure_environment(configure_env CCAS "${z_vcm_compiler_dir}/as.exe")
+            z_vcpkg_append_to_configure_environment(configure_env AS "${z_vcm_compiler_dir}/as.exe")
+        else()
+            z_vcpkg_append_to_configure_environment(configure_env CCAS ":")   # If required set the ENV variable CCAS in the portfile correctly
+            z_vcpkg_append_to_configure_environment(configure_env AS ":")   # If required set the ENV variable AS in the portfile correctly
+        endif()
 
         foreach(_env IN LISTS arg_CONFIGURE_ENVIRONMENT_VARIABLES)
             z_vcpkg_append_to_configure_environment(configure_env ${_env} "${${_env}}")
