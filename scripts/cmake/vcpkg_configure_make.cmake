@@ -368,6 +368,16 @@ function(vcpkg_configure_make)
         endif()
 
         vcpkg_list(INSERT path_list "${index}" ${add_to_env} "${MSYS_ROOT}/usr/bin")
+        math(EXPR index "${index} + 1")
+
+        # Fix for MinGW builds with external toolchains (e.g., Rtools42)
+        # GitHub issue: https://github.com/microsoft/vcpkg/issues/49285
+        # Add compiler bin AFTER MSYS2 so bash works, but binutils from
+        # the toolchain are available as fallback for tools not explicitly set.
+        if(VCPKG_TARGET_IS_MINGW AND VCPKG_DETECTED_CMAKE_C_COMPILER)
+            cmake_path(GET VCPKG_DETECTED_CMAKE_C_COMPILER PARENT_PATH z_vcm_compiler_dir)
+            vcpkg_list(INSERT path_list "${index}" "${z_vcm_compiler_dir}")
+        endif()
 
         cmake_path(CONVERT "${path_list}" TO_NATIVE_PATH_LIST native_path_list)
         set(ENV{PATH} "${native_path_list}")
@@ -524,12 +534,14 @@ function(vcpkg_configure_make)
         else()
             z_vcpkg_append_to_configure_environment(configure_env DLLTOOL "link.exe -verbose -dll")
         endif()
-        # For MinGW, use the C compiler for assembly (CCAS = C Compiler for ASsembly).
-        # GCC can compile assembly directly, so we use it instead of the standalone assembler.
-        # This handles toolchains with prefixed tools (e.g., x86_64-w64-mingw32-as.exe).
+        # For MinGW, derive the assembler from the compiler name.
+        # e.g., x86_64-w64-mingw32-gcc.exe -> x86_64-w64-mingw32-as.exe
+        # This fixes GitHub issue microsoft/vcpkg#49285 where MSYS2's assembler
+        # is incompatible with external MinGW toolchains like Rtools42.
         if(VCPKG_TARGET_IS_MINGW AND VCPKG_DETECTED_CMAKE_C_COMPILER)
-            z_vcpkg_append_to_configure_environment(configure_env CCAS "${VCPKG_DETECTED_CMAKE_C_COMPILER}")
-            z_vcpkg_append_to_configure_environment(configure_env AS "${VCPKG_DETECTED_CMAKE_C_COMPILER}")
+            string(REGEX REPLACE "(-?)gcc(\\.exe)?$" "\\1as\\2" z_vcm_assembler "${VCPKG_DETECTED_CMAKE_C_COMPILER}")
+            z_vcpkg_append_to_configure_environment(configure_env CCAS "${z_vcm_assembler}")
+            z_vcpkg_append_to_configure_environment(configure_env AS "${z_vcm_assembler}")
         else()
             z_vcpkg_append_to_configure_environment(configure_env CCAS ":")   # If required set the ENV variable CCAS in the portfile correctly
             z_vcpkg_append_to_configure_environment(configure_env AS ":")   # If required set the ENV variable AS in the portfile correctly
