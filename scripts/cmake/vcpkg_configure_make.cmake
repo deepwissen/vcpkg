@@ -367,17 +367,6 @@ function(vcpkg_configure_make)
             message(WARNING "Unable to find system dir in the PATH variable! Appending required msys paths!")
         endif()
 
-        # Fix for MinGW builds with external toolchains (e.g., Rtools42)
-        # GitHub issue: https://github.com/microsoft/vcpkg/issues/49285
-        # Problem: MSYS2's binutils (as, ar, ld) are incompatible with external MinGW compilers.
-        # Solution: Insert the compiler's bin directory BEFORE MSYS2 in PATH so that
-        # the MinGW toolchain's binutils are found first.
-        if(VCPKG_TARGET_IS_MINGW AND VCPKG_DETECTED_CMAKE_C_COMPILER)
-            cmake_path(GET VCPKG_DETECTED_CMAKE_C_COMPILER PARENT_PATH z_vcm_compiler_dir)
-            vcpkg_list(INSERT path_list "${index}" "${z_vcm_compiler_dir}")
-            math(EXPR index "${index} + 1")
-        endif()
-
         vcpkg_list(INSERT path_list "${index}" ${add_to_env} "${MSYS_ROOT}/usr/bin")
 
         cmake_path(CONVERT "${path_list}" TO_NATIVE_PATH_LIST native_path_list)
