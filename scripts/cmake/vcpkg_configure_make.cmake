@@ -374,7 +374,8 @@ function(vcpkg_configure_make)
         # GitHub issue: https://github.com/microsoft/vcpkg/issues/49285
         # Add compiler bin AFTER MSYS2 so bash works, but binutils from
         # the toolchain are available as fallback for tools not explicitly set.
-        if(VCPKG_TARGET_IS_MINGW AND VCPKG_DETECTED_CMAKE_C_COMPILER)
+        # Detect MinGW by checking compiler path (more reliable than VCPKG_TARGET_IS_MINGW)
+        if(VCPKG_DETECTED_CMAKE_C_COMPILER AND (VCPKG_DETECTED_CMAKE_C_COMPILER MATCHES "mingw|MinGW" OR VCPKG_DETECTED_CMAKE_C_COMPILER MATCHES "-gcc(\\.exe)?$"))
             cmake_path(GET VCPKG_DETECTED_CMAKE_C_COMPILER PARENT_PATH z_vcm_compiler_dir)
             vcpkg_list(INSERT path_list "${index}" "${z_vcm_compiler_dir}")
         endif()
@@ -538,7 +539,14 @@ function(vcpkg_configure_make)
         # e.g., x86_64-w64-mingw32-gcc.exe -> x86_64-w64-mingw32-as.exe
         # This fixes GitHub issue microsoft/vcpkg#49285 where MSYS2's assembler
         # is incompatible with external MinGW toolchains like Rtools42.
-        if(VCPKG_TARGET_IS_MINGW AND VCPKG_DETECTED_CMAKE_C_COMPILER)
+        # Detect MinGW by checking if compiler path contains mingw or ends with -gcc
+        set(z_vcm_is_mingw_compiler FALSE)
+        if(VCPKG_DETECTED_CMAKE_C_COMPILER)
+            if(VCPKG_DETECTED_CMAKE_C_COMPILER MATCHES "mingw|MinGW" OR VCPKG_DETECTED_CMAKE_C_COMPILER MATCHES "-gcc(\\.exe)?$")
+                set(z_vcm_is_mingw_compiler TRUE)
+            endif()
+        endif()
+        if(z_vcm_is_mingw_compiler)
             string(REGEX REPLACE "(-?)gcc(\\.exe)?$" "\\1as\\2" z_vcm_assembler "${VCPKG_DETECTED_CMAKE_C_COMPILER}")
             z_vcpkg_append_to_configure_environment(configure_env CCAS "${z_vcm_assembler}")
             z_vcpkg_append_to_configure_environment(configure_env AS "${z_vcm_assembler}")
