@@ -535,10 +535,12 @@ function(vcpkg_configure_make)
         else()
             z_vcpkg_append_to_configure_environment(configure_env DLLTOOL "link.exe -verbose -dll")
         endif()
-        # For MinGW, use the toolchain's assembler. For MSVC, disable (not needed).
-        if(VCPKG_TARGET_IS_MINGW AND z_vcm_compiler_dir)
-            z_vcpkg_append_to_configure_environment(configure_env CCAS "${z_vcm_compiler_dir}/as.exe")
-            z_vcpkg_append_to_configure_environment(configure_env AS "${z_vcm_compiler_dir}/as.exe")
+        # For MinGW, use the C compiler for assembly (CCAS = C Compiler for ASsembly).
+        # GCC can compile assembly directly, so we use it instead of the standalone assembler.
+        # This handles toolchains with prefixed tools (e.g., x86_64-w64-mingw32-as.exe).
+        if(VCPKG_TARGET_IS_MINGW AND VCPKG_DETECTED_CMAKE_C_COMPILER)
+            z_vcpkg_append_to_configure_environment(configure_env CCAS "${VCPKG_DETECTED_CMAKE_C_COMPILER}")
+            z_vcpkg_append_to_configure_environment(configure_env AS "${VCPKG_DETECTED_CMAKE_C_COMPILER}")
         else()
             z_vcpkg_append_to_configure_environment(configure_env CCAS ":")   # If required set the ENV variable CCAS in the portfile correctly
             z_vcpkg_append_to_configure_environment(configure_env AS ":")   # If required set the ENV variable AS in the portfile correctly
