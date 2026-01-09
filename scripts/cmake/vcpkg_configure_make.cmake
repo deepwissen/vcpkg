@@ -368,20 +368,20 @@ function(vcpkg_configure_make)
         endif()
 
         vcpkg_list(INSERT path_list "${index}" ${add_to_env} "${MSYS_ROOT}/usr/bin")
-        math(EXPR index "${index} + 1")
 
         # Fix for MinGW builds with external toolchains (e.g., Rtools42)
         # GitHub issue: https://github.com/microsoft/vcpkg/issues/49285
-        # Add compiler bin AFTER MSYS2 so bash works, but binutils from
-        # the toolchain are available as fallback for tools not explicitly set.
-        # Detect MinGW by checking compiler path (more reliable than VCPKG_TARGET_IS_MINGW)
+        # APPEND compiler bin to END of PATH so gcc can find its support tools
+        # (like collect2, ld, libgcc) but MSYS2 tools are found first.
         if(VCPKG_DETECTED_CMAKE_C_COMPILER AND (VCPKG_DETECTED_CMAKE_C_COMPILER MATCHES "mingw|MinGW" OR VCPKG_DETECTED_CMAKE_C_COMPILER MATCHES "-gcc(\\.exe)?$"))
             cmake_path(GET VCPKG_DETECTED_CMAKE_C_COMPILER PARENT_PATH z_vcm_compiler_dir)
-            vcpkg_list(INSERT path_list "${index}" "${z_vcm_compiler_dir}")
+            vcpkg_list(APPEND path_list "${z_vcm_compiler_dir}")
+            message(STATUS "[DEBUG vcpkg#49285] Added compiler dir to END of PATH: ${z_vcm_compiler_dir}")
         endif()
 
         cmake_path(CONVERT "${path_list}" TO_NATIVE_PATH_LIST native_path_list)
         set(ENV{PATH} "${native_path_list}")
+        message(STATUS "[DEBUG vcpkg#49285] Final PATH: ${native_path_list}")
     else()
         find_program(base_cmd bash REQUIRED)
     endif()
