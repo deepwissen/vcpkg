@@ -541,11 +541,13 @@ function(vcpkg_configure_make)
         # is incompatible with external MinGW toolchains like Rtools42.
         # Detect MinGW by checking if compiler path contains mingw or ends with -gcc
         set(z_vcm_is_mingw_compiler FALSE)
+        message(STATUS "[DEBUG vcpkg#49285] VCPKG_DETECTED_CMAKE_C_COMPILER='${VCPKG_DETECTED_CMAKE_C_COMPILER}'")
         if(VCPKG_DETECTED_CMAKE_C_COMPILER)
             if(VCPKG_DETECTED_CMAKE_C_COMPILER MATCHES "mingw|MinGW" OR VCPKG_DETECTED_CMAKE_C_COMPILER MATCHES "-gcc(\\.exe)?$")
                 set(z_vcm_is_mingw_compiler TRUE)
             endif()
         endif()
+        message(STATUS "[DEBUG vcpkg#49285] z_vcm_is_mingw_compiler=${z_vcm_is_mingw_compiler}")
         if(z_vcm_is_mingw_compiler)
             string(REGEX REPLACE "(-?)gcc(\\.exe)?$" "\\1as\\2" z_vcm_assembler "${VCPKG_DETECTED_CMAKE_C_COMPILER}")
             z_vcpkg_append_to_configure_environment(configure_env CCAS "${z_vcm_assembler}")
